@@ -1,0 +1,18 @@
+{"intents": [
+    {
+        "tag": "Details",
+        "responses": "https://amityuniversity.ae/contact-us/enquiry-form",
+        "context": [""]  
+    },
+    {"tag": "scholarship",
+     "responses": "https://amityuniversity.ae/join-amity/scholarships",
+     "context": [""]
+    },
+    {
+        "tag": "schedule",
+        "responses": "https://amityuniversity.ae/contact-us/open-days",
+        "context": [""]  
+    }   
+
+]
+}
