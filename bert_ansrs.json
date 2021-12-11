@@ -1,18 +1,17 @@
 {"intents": [
     {
         "tag": "Details",
-        "responses": "https://amityuniversity.ae/contact-us/enquiry-form",
+        "responses": "P.O. Box 345019; Located in Dubai International Academic City; HELPLINE: 800AMITY (26489)/ +971 4 4554 900. email: www.amityuniversity.ae; Contact Telephone: +9714 4554 900 Fax: +9714 4356 810 Mobile Helpline: +971 55 2305 741 +971 55 215 4941; Admissions: admissions@amityuniversity.ae; Academic Office: academicoffice@amityuniversity.ae General: info@amityuniversity.ae; Opening hours: Sunday to Thursday, 9am to 5pm",
         "context": [""]  
     },
     {"tag": "scholarship",
-     "responses": "https://amityuniversity.ae/join-amity/scholarships",
+     "responses": "Our scholarships are granted annually and reassessed for the following years according to academic performance (Merit List based on CGPA). The scholarships we offer are Merit Scholarship, Means Scholarship, Amity Graduate Awards, Sibling Scholarship, Sibling Scholarship, Sports Scholarship and Emirati Scholarship. About Merit Scholarship:  These scholarships are granted at the time of admission and are based on school or graduation results and is only applicable to students graduating from schools or universities in the UAE. About Merit Scholarship for Undergraduate Programmes: 100% scholarships are awarded to students achieving 93% or above in CBSE board exams or the equivalent from another curriculum. This is only applicable to students graduating from schools or universities in the UAE. 50% is awarded for 88% or above and 25% for 80% or above or the equivalent. About Merit Scholarship for Postgraduate Programmes: 15% is awarded for achieving 75% or above in a recognised Bachelor's degree or the equivalent and is only applicable to students graduating from schools or universities in the UAE. About Means Scholarship: These scholarships are for students who are academically proficient and need financial assistance from the University. Please note that all requests for Means Scholarships are evaluated by the Scholarship Committee and the decision of the Committee is final. About Amity Graduate Awards: Students who have completed an undergraduate programme from Amity University Dubai are awarded a 20% scholarship. About Sibling Scholarship: When a second sibling joins Amity University Dubai, a 15% scholarship is awarded to them. About Sports Scholarship: Awarded for excellence in sporting achievements. Subject to management approval. About Emirati Scholarship: All Emirati nationals are eligible for a 20% scholarship.",
      "context": [""]
     },
     {
         "tag": "schedule",
-        "responses": "https://amityuniversity.ae/contact-us/open-days",
+        "responses": "You can find the schedule in the link here: https://amityuniversity.ae/students/academic-calendar",
         "context": [""]  
     }   
-
 ]
 }
