@@ -25,7 +25,9 @@ import numpy as np
 from helpers import apology, login_required
 import tensorflow 
 from tensorflow import keras
-
+import cv2
+import time
+from threading import Thread
 import bert
 from bert import BertModelLayer
 from bert.loader import StockBertConfig, map_stock_config_to_params, load_stock_weights
@@ -34,6 +36,23 @@ from bert.tokenization.bert_tokenization import FullTokenizer
 #qna imports
 import torch
 # from transformers import BertForQuestionAnswering
+
+global capture,rec_frame, grey, switch, neg, face, rec, out 
+capture=0
+grey=0
+neg=0
+thres=0
+face=0
+switch=1
+rec=0
+
+try:
+    os.mkdir('./shots')
+except OSError as error:
+    pass
+
+#Load pretrained face detection model    
+net = cv2.dnn.readNetFromCaffe('D:/Aysha/sem 7/pbl/ChatbotB - Copy (2)/ChatbotB/saved_model/deploy.prototxt.txt', 'D:/Aysha/sem 7/pbl/ChatbotB - Copy (2)/ChatbotB/saved_model/res10_300x300_ssd_iter_140000.caffemodel')
 
 bert_model_name="uncased_L-12_H-768_A-12"
 bert_ckpt_dir=os.path.join("D:/Aysha/sem 7/pbl/ChatbotB/",bert_model_name)
@@ -150,13 +169,24 @@ def predict_class2(msg,model):
 
     pred_token_ids = map(lambda tids: tids +[0]*(12-len(tids)),pred_token_ids)
     pred_token_ids = np.array(list(pred_token_ids))
-    print("pred_token_ids",pred_token_ids)
-    print(pred_token_ids.size)
+    # print("pred_token_ids",pred_token_ids)
+    # print(pred_token_ids.size)
     predictions = model.predict(pred_token_ids).argmax(axis=-1)
-    print("predictions",predictions)
+    # print("predictions: ", classes[predictions])
+    # score = tensorflow.nn.softmax(predictions)
+    # print("accuracy", classes[np.argmax(score)])
+    # predictions2 = model.predict(pred_token_ids)[-1]
+    # print(predictions2)
+    # print("predictions: ")
+    # score2 = tensorflow.nn.softmax(predictions2)
+    # print("accuracy", classes[np.argmax(score2)],np.argmax(score2))
+    # print("predictions",predictions(score2))
+    # print("Accuracy")
     return predictions
 
 def getResponse2(ints, intents_json, msg):
+    # if accuracy<0.6:
+    #     return "Sorry! Can you repeat"
     for text, label in zip(msg, ints):
         print("text:", text, "\nintent:", classes[label])
         tag= classes[label]
@@ -165,15 +195,52 @@ def getResponse2(ints, intents_json, msg):
         print(i["tag"], tag)
         if i['tag']==tag:
             #add QnA part
-            ansr = answer_question(msg, i["responses"])
+            ansr = answer_question("what is "+ msg, i["responses"])
             return ansr
             # return i["responses"]
-    return i["Sorry...Can u repeat"]
+    
 
 def chatbot_response(msg):    
     ints = predict_class2(msg, model)
     res = getResponse2(ints, intents,msg)
     return res
+
+
+camera = cv2.VideoCapture(0)
+
+def record(out):
+    global rec_frame
+    while(rec):
+        time.sleep(0.05)
+        out.write(rec_frame)
+
+
+def detect_face(frame):
+    global net
+    (h, w) = frame.shape[:2]
+    blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 1.0,
+        (300, 300), (104.0, 177.0, 123.0))   
+    net.setInput(blob)
+    detections = net.forward()
+    confidence = detections[0, 0, 0, 2]
+
+    if confidence < 0.5:            
+            return frame           
+
+    box = detections[0, 0, 0, 3:7] * np.array([w, h, w, h])
+    (startX, startY, endX, endY) = box.astype("int")
+    try:
+        frame=frame[startY:endY, startX:endX]
+        (h, w) = frame.shape[:2]
+        r = 480 / float(h)
+        dim = ( int(w * r), 480)
+        frame=cv2.resize(frame,dim)
+    except Exception as e:
+        pass
+    return frame
+ 
+
+
 
 from flask import Flask, render_template, request
 
@@ -243,8 +310,6 @@ def login():
         # Ensure username was submitted
         if not input_username:
             return render_template("login.html",messager = 1)
-
-
 
         # Ensure password was submitted
         elif not input_password:
@@ -338,8 +403,6 @@ def register():
         return render_template("register.html")
 
 
-
-
 @app.route("/facereg", methods=["GET", "POST"])
 def facereg():
     session.clear()
@@ -361,7 +424,7 @@ def facereg():
         
         decoded_data = b64decode(uncompressed_data)
         
-        new_image_handle = open('./static/face/unknown/'+str(id_)+'.jpg', 'wb')
+        new_image_handle = open('./static/face/'+str(id_)+'.jpg', 'wb')
         
         new_image_handle.write(decoded_data)
         new_image_handle.close()
@@ -374,7 +437,7 @@ def facereg():
         bill_face_encoding = face_recognition.face_encodings(image_of_bill)[0]
 
         unknown_image = face_recognition.load_image_file(
-        './static/face/unknown/'+str(id_)+'.jpg')
+        './static/face/'+str(id_)+'.jpg')
         try:
             unknown_face_encoding = face_recognition.face_encodings(unknown_image)[0]
         except:
@@ -429,12 +492,118 @@ def facesetup():
     else:
         return render_template("face.html")
 
+def gen_frames():  # generate frame by frame from camera
+    global out, capture,rec_frame
+    while True:
+        success, frame = camera.read() 
+        if success:
+            if(face):                
+                frame= detect_face(frame)
+            if(grey):
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            if(neg):
+                frame=cv2.bitwise_not(frame)    
+            if(thres):
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA) 
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                mask, frame = cv2.threshold(gray, 120,255,cv2.THRESH_BINARY)
+            if(capture):
+                capture=0
+                now = datetime.datetime.now()
+                p = os.path.sep.join(['shots', "shot_{}.png".format(str(now).replace(":",''))])
+                cv2.imwrite(p, frame)
+            
+            if(rec):
+                rec_frame=frame
+                frame= cv2.putText(cv2.flip(frame,1),"Recording...", (0,25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255),4)
+                frame=cv2.flip(frame,1)
+            
+            
+            try:
+                ret, buffer = cv2.imencode('.jpg', cv2.flip(frame,1))
+                frame = buffer.tobytes()
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            except Exception as e:
+                pass
+                
+        else:
+            pass
+
+@app.route('/filters')
+def filters():
+    return render_template('filters.html')
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/requests',methods=['POST','GET'])
+def tasks():
+    global switch,camera
+    if request.method == 'POST':
+        if request.form.get('click') == 'Capture':
+            global capture
+            capture=1
+        elif  request.form.get('grey') == 'Grey':
+            global grey
+            grey=not grey
+        elif  request.form.get('neg') == 'Negative':
+            global neg
+            neg=not neg
+        elif  request.form.get('thres') == 'Threshold':
+            global thres
+            thres=not thres
+        elif  request.form.get('face') == 'Face Only':
+            global face
+            face=not face 
+            if(face):
+                time.sleep(4)   
+        elif  request.form.get('stop') == 'Stop/Start':
+            
+            if(switch==1):
+                switch=0
+                camera.release()
+                cv2.destroyAllWindows()
+                
+            else:
+                camera = cv2.VideoCapture(0)
+                switch=1
+        elif  request.form.get('rec') == 'Start/Stop Recording':
+            global rec, out
+            rec= not rec
+            if(rec):
+                now=datetime.datetime.now() 
+                fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                out = cv2.VideoWriter('vid_{}.avi'.format(str(now).replace(":",'')), fourcc, 20.0, (640, 480))
+                #Start new thread for recording the video
+                thread = Thread(target = record, args=[out,])
+                thread.start()
+            elif(rec==False):
+                out.release()
+                          
+                 
+    elif request.method=='GET':
+        return render_template('filters.html')
+    return render_template('filters.html')
+
+# from filters import verify_alpha_channel
+# @app.route('/serpia')
+# def apply_sepia(frame, intensity=0.5):
+#     frame = verify_alpha_channel(frame)
+#     frame_h, frame_w, frame_c = frame.shape
+#     sepia_bgra = (20, 66, 112, 1)
+#     overlay = np.full((frame_h, frame_w, 4), sepia_bgra, dtype='uint8')
+#     cv2.addWeighted(overlay, intensity, frame, 1.0, 0, frame)
+#     return frame
+
+
+
 def errorhandler(e):
     """Handle error"""
     if not isinstance(e, HTTPException):
         e = InternalServerError()
     return render_template("error.html",e = e)
-
 
 # Listen for errors
 for code in default_exceptions:
